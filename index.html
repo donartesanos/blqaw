@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ckb" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>بڵقاو</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg1:#FDF1E7;--bg2:#F6D8C6;--ui:#6a4a3a;--panel:rgba(255,250,245,.92);--on:#e59a80}
+body[data-t="night"]{--bg1:#1F2A44;--bg2:#2E3B5E;--ui:#e6eaf6;--panel:rgba(31,42,68,.94);--on:#7FB7BE}
+body[data-t="sky"]{--bg1:#CFE9FB;--bg2:#8EC5EE;--ui:#24506f;--panel:rgba(246,251,255,.94);--on:#4a9fd8}
+body[data-t="mountain"]{--bg1:#EEF3E8;--bg2:#D3E3CC;--ui:#3d5a43;--panel:rgba(250,253,247,.94);--on:#7fae88}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden}
+body{font-family:"Noto Naskh Arabic","Segoe UI",Tahoma,system-ui,sans-serif;color:var(--ui);background:linear-gradient(165deg,var(--bg1),var(--bg2));padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none}
+button{font:inherit;color:inherit;cursor:pointer}
+#gear{position:fixed;top:calc(env(safe-area-inset-top) + 12px);inset-inline-start:12px;width:44px;height:44px;border-radius:50%;border:0;background:var(--panel);font-size:22px;line-height:1;z-index:3}
+#cnt{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 18px);left:0;right:0;text-align:center;font-size:17px;opacity:.7;pointer-events:none}
+#panel{position:fixed;top:calc(env(safe-area-inset-top) + 64px);inset-inline-start:12px;width:min(270px,calc(100% - 24px));background:var(--panel);border-radius:18px;padding:14px 16px;z-index:3;box-shadow:0 8px 30px rgba(0,0,0,.14);max-height:calc(100% - 90px);overflow:auto}
+#panel[hidden]{display:none}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0}
+.sw{width:48px;height:27px;border-radius:14px;border:0;background:rgba(128,128,128,.35);position:relative;flex:none}
+.sw::after{content:"";position:absolute;top:3px;inset-inline-start:3px;width:21px;height:21px;border-radius:50%;background:#fff;transition:inset-inline-start .2s}
+.sw[aria-pressed="true"]{background:var(--on)}
+.sw[aria-pressed="true"]::after{inset-inline-start:24px}
+input[type=range]{width:120px;accent-color:var(--on)}
+.themes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.th,.tn{flex:1;padding:8px 4px;border-radius:12px;border:2px solid transparent;background:rgba(128,128,128,.16);font-size:14px}
+.th[aria-pressed="true"],.tn[aria-pressed="true"]{border-color:var(--on)}
+#start{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;padding:24px;z-index:4;background:linear-gradient(165deg,var(--bg1),var(--bg2))}
+#start[hidden]{display:none}
+#start h1{margin:0;font-size:58px;font-weight:700;letter-spacing:0}
+#start p{margin:0;font-size:19px;opacity:.75;max-width:18em;line-height:1.7}
+#go{border:0;border-radius:30px;padding:14px 38px;font-size:20px;background:var(--on);color:#fff}
+[hidden]{display:none!important}
+.langs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.lg{border:2px solid transparent;border-radius:14px;padding:7px 14px;font-size:15px;background:rgba(128,128,128,.16)}
+.lg[aria-pressed="true"]{border-color:var(--on)}
+@media (prefers-reduced-motion:reduce){.sw::after{transition:none}}
+</style>
+</head>
+<body data-t="evening">
+<canvas id="c"></canvas>
+<button id="gear" data-a="set">⚙︎</button>
+<div id="cnt"></div>
+
+<div id="panel" hidden>
+  <div class="row"><span data-i="snd"></span><button class="sw" id="sSound" aria-pressed="true" data-a="snd"></button></div>
+  <div class="row"><span data-i="vol"></span><input type="range" id="vol" min="0" max="100"></div>
+  <div class="row"><span data-i="mus"></span><button class="sw" id="sMusic" aria-pressed="true" data-a="mus"></button></div>
+  <div class="row"><span data-i="mvol"></span><input type="range" id="mvol" min="0" max="100"></div>
+  <div class="row"><span data-i="tune"></span></div>
+  <div class="themes">
+    <button class="tn" data-n="0" aria-pressed="true" data-i="t0"></button>
+    <button class="tn" data-n="1" aria-pressed="false" data-i="t1"></button>
+    <button class="tn" data-n="2" aria-pressed="false" data-i="t2"></button>
+    <button class="tn" data-n="3" aria-pressed="false" data-i="t3"></button>
+  </div>
+  <div class="row" id="hRow"><span data-i="hap"></span><button class="sw" id="sHaptic" aria-pressed="true" data-a="hap"></button></div>
+  <div class="row"><span data-i="bg"></span></div>
+  <div class="themes">
+    <button class="th" data-t="evening" aria-pressed="true" data-i="evening"></button>
+    <button class="th" data-t="night" aria-pressed="false" data-i="night"></button>
+    <button class="th" data-t="mountain" aria-pressed="false" data-i="mountain"></button>
+    <button class="th" data-t="sky" aria-pressed="false" data-i="sky"></button>
+  </div>
+  <div class="row"><span data-i="lang"></span></div>
+  <div class="langs"><button class="lg" data-l="ku">کوردی</button><button class="lg" data-l="ar">العربية</button><button class="lg" data-l="en">English</button></div>
+</div>
+
+<div id="start">
+  <h1 data-i="title"></h1>
+  <p data-i="sub"></p>
+  <button id="go" data-i="go"></button>
+  <div class="langs"><button class="lg" data-l="ku">کوردی</button><button class="lg" data-l="ar">العربية</button><button class="lg" data-l="en">English</button></div>
+</div>
+
+<script>
+(function(){
+var tg = window.Telegram && window.Telegram.WebApp;
+if (tg) { try { tg.ready(); tg.expand(); } catch(e){} }
+
+/* ---------- settings ---------- */
+var S = { sound:true, vol:60, music:true, mvol:45, tune:0, haptic:true, theme:'evening', lang:'ku' };
+var T = {
+  ku:{title:'بڵقاو',sub:'بڵقەکانیش چیرۆکی خۆیان هەیە بیانتەقێنە و گوێ لە چیرۆکەکانیان بگرە',go:'دەی',set:'ڕێکخستنەکان',snd:'دەنگ',vol:'بەرزی دەنگ',mus:'مۆسیقا',mvol:'بەرزی مۆسیقا',hap:'لەرزین',bg:'پاشبنەما',evening:'ئێوارە',night:'شەو',mountain:'شاخ',sky:'ئاسمان',lang:'زمان',tune:'ئاواز',t0:'خۆشی',t1:'ئارام',t2:'بەهار',t3:'خەون',cnt:'بڵقەکان'},
+  ar:{title:'بڵقاو',sub:'للفقاعات حكاياتها أيضاً، فجرّب أن تفرقعها وتصغِ إلى حكاياتها',go:'هيّا',set:'الإعدادات',snd:'الصوت',vol:'مستوى الصوت',mus:'الموسيقى',mvol:'مستوى الموسيقى',hap:'الاهتزاز',bg:'الخلفية',evening:'المساء',night:'الليل',mountain:'الجبل',sky:'السماء',lang:'اللغة',tune:'اللحن',t0:'فرح',t1:'هدوء',t2:'ربيع',t3:'حلم',cnt:'الفقاعات'},
+  en:{title:'بڵقاو',sub:'Bubbles have stories of their own. Pop them and listen.',go:'Let’s go',set:'Settings',snd:'Sound',vol:'Volume',mus:'Music',mvol:'Music volume',hap:'Vibration',bg:'Background',evening:'Evening',night:'Night',mountain:'Mountain',sky:'Sky',lang:'Language',tune:'Tune',t0:'Joy',t1:'Calm',t2:'Spring',t3:'Dream',cnt:'Bubbles'}
+};
+var BG = { evening:'#FDF1E7', night:'#1F2A44', mountain:'#EEF3E8', sky:'#CFE9FB' };
+var PAL = {
+  evening:['#F7B7A3','#F4D58D','#BFD8B8','#A9C8E8'],
+  night:['#7FB7BE','#B8A9E8','#F2C6DE','#F6E3B4'],
+  mountain:['#9CC5A1','#C9DDB5','#F2D49B','#E8B4A0'],
+  sky:['#FFD3E0','#FFE9A8','#C9F0D8','#E3D7FF']
+};
+var cloud = !!(tg && tg.CloudStorage && tg.isVersionAtLeast && tg.isVersionAtLeast('6.9'));
+var canBuzz = !!(tg && tg.HapticFeedback) || !!navigator.vibrate;
+
+function load(cb){
+  var done = false;
+  function fin(){ if(!done){ done = true; cb(); } }
+  if (cloud) {
+    setTimeout(fin, 900);
+    try {
+      tg.CloudStorage.getItem('s', function(err, v){
+        if (!err && v) { try { Object.assign(S, JSON.parse(v)); } catch(e){} }
+        fin();
+      });
+      return;
+    } catch(e){}
+  }
+  try { var v = localStorage.getItem('s'); if (v) Object.assign(S, JSON.parse(v)); } catch(e){}
+  fin();
+}
+function save(){
+  var v = JSON.stringify(S);
+  if (cloud) { try { tg.CloudStorage.setItem('s', v); return; } catch(e){} }
+  try { localStorage.setItem('s', v); } catch(e){}
+}
+
+/* ---------- ui ---------- */
+var $ = function(id){ return document.getElementById(id); };
+function renderCnt(){
+  var L = T[S.lang] || T.ku;
+  $('cnt').textContent = count ? L.cnt + ': ' + count : '';
+}
+function applyLang(){
+  if (!T[S.lang]) S.lang = 'ku';
+  var L = T[S.lang];
+  document.documentElement.lang = S.lang === 'ku' ? 'ckb' : S.lang;
+  document.documentElement.dir = S.lang === 'en' ? 'ltr' : 'rtl';
+  document.title = L.title;
+  document.querySelectorAll('[data-i]').forEach(function(e){ e.textContent = L[e.dataset.i]; });
+  document.querySelectorAll('[data-a]').forEach(function(e){ e.setAttribute('aria-label', L[e.dataset.a]); });
+  document.querySelectorAll('.lg').forEach(function(b){ b.setAttribute('aria-pressed', b.dataset.l === S.lang); });
+  renderCnt();
+}
+function apply(){
+  if (!PAL[S.theme]) S.theme = 'evening';
+  document.body.dataset.t = S.theme;
+  $('sSound').setAttribute('aria-pressed', S.sound);
+  $('sHaptic').setAttribute('aria-pressed', S.haptic);
+  $('vol').value = S.vol;
+  $('sMusic').setAttribute('aria-pressed', S.music);
+  $('mvol').value = S.mvol;
+  document.querySelectorAll('.tn').forEach(function(b){ b.setAttribute('aria-pressed', +b.dataset.n === S.tune); });
+  applyLang();
+  $('hRow').hidden = !canBuzz;
+  document.querySelectorAll('.th').forEach(function(b){
+    b.setAttribute('aria-pressed', b.dataset.t === S.theme);
+  });
+  if (tg) { try { tg.setBackgroundColor(BG[S.theme]); tg.setHeaderColor(BG[S.theme]); } catch(e){} }
+}
+$('gear').onclick = function(){ $('panel').hidden = !$('panel').hidden; };
+$('sSound').onclick = function(){ S.sound = !S.sound; apply(); save(); };
+$('sHaptic').onclick = function(){ S.haptic = !S.haptic; apply(); save(); buzz(); };
+$('vol').oninput = function(){ S.vol = +this.value; };
+$('vol').onchange = function(){ save(); };
+$('sMusic').onclick = function(){ S.music = !S.music; apply(); save(); syncMusic(); };
+$('mvol').oninput = function(){ S.mvol = +this.value; syncMusic(); };
+$('mvol').onchange = function(){ save(); };
+document.querySelectorAll('.lg').forEach(function(b){
+  b.onclick = function(){ S.lang = b.dataset.l; apply(); save(); };
+});
+document.querySelectorAll('.tn').forEach(function(b){
+  b.onclick = function(){ S.tune = +b.dataset.n; S.music = true; setTune(); apply(); save(); syncMusic(); };
+});
+document.querySelectorAll('.th').forEach(function(b){
+  b.onclick = function(){ S.theme = b.dataset.t; apply(); save(); };
+});
+$('go').onclick = function(){ initAudio(); $('start').hidden = true; };
+
+/* ---------- audio: soft pop made in code, no files ---------- */
+var ac, lastS = 0, mg, dly, fbG, mt = null, nextT = 0, stp = 0, mi = 3, STEP = 60 / 78 / 2;
+var TU = [
+  { bpm:78, mt:'sine', dec:1.7, pk:0.1, pad:0.035, fb:0.38, dd:1.5,
+    ch:[{b:130.81,p:[261.63,329.63,392]},{b:110,p:[220,261.63,329.63]},{b:174.61,p:[261.63,349.23,440]},{b:196,p:[246.94,293.66,392]}],
+    mel:[392,440,523.25,587.33,659.25,783.99,880], pr:[1,0.35,0.7,0.35,0.85,0.35,0.6,0.45] },
+  { bpm:62, mt:'sine', dec:2.4, pk:0.08, pad:0.045, fb:0.45, dd:1.5,
+    ch:[{b:130.81,p:[261.63,329.63,392]},{b:196,p:[246.94,293.66,392]},{b:110,p:[220,261.63,329.63]},{b:174.61,p:[261.63,349.23,440]}],
+    mel:[329.63,392,440,523.25,587.33,659.25], pr:[0.9,0.1,0.3,0.1,0.5,0.1,0.3,0.2] },
+  { bpm:88, mt:'triangle', dec:1.0, pk:0.09, pad:0.03, fb:0.3, dd:1.5,
+    ch:[{b:146.83,p:[293.66,369.99,440]},{b:123.47,p:[246.94,293.66,369.99]},{b:196,p:[246.94,293.66,392]},{b:110,p:[277.18,329.63,440]}],
+    mel:[440,493.88,587.33,659.25,739.99,880,987.77], pr:[1,0.5,0.75,0.5,0.9,0.5,0.7,0.55] },
+  { bpm:66, mt:'sine', dec:2.8, pk:0.09, pad:0.05, fb:0.5, dd:2,
+    ch:[{b:110,p:[220,261.63,329.63]},{b:174.61,p:[261.63,349.23,440]},{b:130.81,p:[261.63,329.63,392]},{b:164.81,p:[246.94,329.63,392]}],
+    mel:[392,440,523.25,587.33,659.25,783.99,880], pr:[0.9,0.2,0.5,0.25,0.65,0.2,0.45,0.3] }
+];
+var tu = TU[0];
+function setTune(){
+  tu = TU[S.tune] || TU[0];
+  STEP = 60 / tu.bpm / 2; stp = 0; mi = 3;
+  if (ac && dly) {
+    dly.delayTime.setTargetAtTime(STEP * tu.dd, ac.currentTime, 0.1);
+    fbG.gain.setTargetAtTime(tu.fb, ac.currentTime, 0.1);
+    if (mt !== null) nextT = ac.currentTime + 0.2;
+  }
+}
+function buildMusic(){
+  mg = ac.createGain(); mg.gain.value = 0; mg.connect(ac.destination);
+  dly = ac.createDelay(1); dly.delayTime.value = STEP * 1.5;
+  fbG = ac.createGain(); fbG.gain.value = 0.38;
+  var lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2200;
+  dly.connect(lp); lp.connect(fbG); fbG.connect(dly); lp.connect(mg);
+}
+function tone(f, t, type, peak, att, dur, send){
+  var o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.value = f;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(peak, t + att);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(mg); if (send) g.connect(dly);
+  o.start(t); o.stop(t + dur + 0.05);
+}
+function playStep(t){
+  var c = tu.ch[Math.floor(stp / 8) % tu.ch.length], k = stp % 8;
+  if (k === 0) {
+    tone(c.b, t, 'triangle', 0.11, 0.02, 1.8, false);
+    c.p.forEach(function(f){ tone(f, t, 'sine', tu.pad, 0.5, STEP * 8 + 0.5, false); });
+  }
+  if (k === 4) tone(c.b * 1.5, t, 'triangle', 0.05, 0.02, 1.2, false);
+  if (Math.random() < tu.pr[k]) {
+    var d = [-1, -1, 0, 1, 1, 2][Math.floor(Math.random() * 6)];
+    mi = Math.max(0, Math.min(tu.mel.length - 1, mi + d));
+    tone(tu.mel[mi], t, tu.mt, tu.pk, 0.01, tu.dec, true);
+    tone(tu.mel[mi] * 2, t, 'sine', 0.03, 0.005, 0.35, true);
+  }
+  stp++;
+}
+function sched(){
+  while (nextT < ac.currentTime + 0.35) { playStep(nextT); nextT += STEP; }
+  mt = setTimeout(sched, 120);
+}
+function syncMusic(){
+  if (!ac || !mg) return;
+  mg.gain.setTargetAtTime(S.music ? S.mvol / 100 : 0, ac.currentTime, 0.6);
+  if (S.music && mt === null) { nextT = ac.currentTime + 0.15; sched(); }
+  if (!S.music && mt !== null) { clearTimeout(mt); mt = null; }
+}
+function initAudio(){
+  try {
+    if (!ac) { var A = window.AudioContext || window.webkitAudioContext; if (A) { ac = new A(); buildMusic(); setTune(); } }
+    if (ac && ac.state === 'suspended') ac.resume();
+    syncMusic();
+  } catch(e){}
+}
+function sound(r){
+  if (!S.sound || !ac || S.vol <= 0) return;
+  var n = performance.now(); if (n - lastS < 35) return; lastS = n;
+  var t = ac.currentTime, f = (720 - r * 4) * (0.88 + Math.random() * 0.26);
+  var o = ac.createOscillator(), g = ac.createGain(), fl = ac.createBiquadFilter();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(f, t);
+  o.frequency.exponentialRampToValueAtTime(f * 0.35, t + 0.13);
+  fl.type = 'lowpass'; fl.frequency.value = 1800;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(Math.max(0.001, 0.4 * S.vol / 100), t + 0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.15);
+  o.connect(fl); fl.connect(g); g.connect(ac.destination);
+  o.start(t); o.stop(t + 0.17);
+}
+function buzz(){
+  if (!S.haptic) return;
+  try {
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    else if (navigator.vibrate) navigator.vibrate(8);
+  } catch(e){}
+}
+
+/* ---------- bubbles ---------- */
+var cv = $('c'), ctx = cv.getContext('2d'), W, H, dpr;
+function resize(){
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight;
+  cv.width = W * dpr; cv.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+addEventListener('resize', resize); resize();
+
+function rgba(h, a){
+  var n = parseInt(h.slice(1), 16);
+  return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+}
+function mk(initial){
+  var r = 26 + Math.random() * 34;
+  var x = r + Math.random() * Math.max(1, W - 2 * r);
+  return { x:x, dx:x, y: initial ? Math.random() * H : H + r + Math.random() * 90, r:r,
+           vy:0.25 + Math.random() * 0.5, ph:Math.random() * 6.28, amp:6 + Math.random() * 10,
+           c:Math.floor(Math.random() * 4) };
+}
+var bubbles = [], fx = [], count = 0;
+for (var i = 0; i < 14; i++) bubbles.push(mk(true));
+
+/* ---------- clouds behind the bubbles; colour follows the chosen background ---------- */
+var CL = { evening:{c:[240,207,220],a:0.95}, night:{c:[122,144,198],a:0.8}, mountain:{c:[200,219,203],a:0.95}, sky:{c:[255,255,255],a:1} };
+var cc = null, clouds = [];
+var slow = (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) ? 0.2 : 1;
+function mkCloud(){
+  var sc = 1 + Math.random() * 1.1, puffs = [], n = 5 + Math.floor(Math.random() * 3);
+  for (var k = 0; k < n; k++) {
+    var u = k / (n - 1), h = Math.sin(u * 3.14159);
+    puffs.push({ ox:(u - 0.5) * 170 * sc, oy:-h * 22 * sc + (Math.random() - 0.5) * 10 * sc, r:(34 + h * 30 + Math.random() * 12) * sc });
+  }
+  return { x:Math.random() * (W + 300) - 150, fy:0.06 + Math.random() * 0.62, w:170 * sc,
+           v:(0.1 + Math.random() * 0.22) * (0.6 + sc * 0.4), al:0.7 + Math.random() * 0.3, puffs:puffs };
+}
+for (var ci = 0; ci < 7; ci++) clouds.push(mkCloud());
+function drawClouds(dt){
+  var tc = CL[S.theme] || CL.evening;
+  if (!cc) cc = { r:tc.c[0], g:tc.c[1], b:tc.c[2], a:tc.a };
+  var e = Math.min(1, 0.04 * dt);
+  cc.r += (tc.c[0] - cc.r) * e; cc.g += (tc.c[1] - cc.g) * e; cc.b += (tc.c[2] - cc.b) * e; cc.a += (tc.a - cc.a) * e;
+  var col = Math.round(cc.r) + ',' + Math.round(cc.g) + ',' + Math.round(cc.b);
+  for (var i = 0; i < clouds.length; i++) {
+    var cl = clouds[i];
+    cl.x += cl.v * dt * slow;
+    if (cl.x - cl.w / 2 - 80 > W) { cl.x = -cl.w / 2 - 80; cl.fy = 0.06 + Math.random() * 0.62; }
+    var al = Math.min(1, cl.al * cc.a);
+    for (var k = 0; k < cl.puffs.length; k++) {
+      var p = cl.puffs[k], px = cl.x + p.ox, py = cl.fy * H + p.oy;
+      if (px + p.r < 0 || px - p.r > W) continue;
+      var g = ctx.createRadialGradient(px, py, 0, px, py, p.r);
+      g.addColorStop(0, 'rgba(' + col + ',' + al + ')');
+      g.addColorStop(0.55, 'rgba(' + col + ',' + (al * 0.85) + ')');
+      g.addColorStop(1, 'rgba(' + col + ',0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, p.r, 0, 6.2832); ctx.fill();
+    }
+  }
+}
+
+function pop(i){
+  var b = bubbles[i], col = PAL[S.theme][b.c], d = [];
+  for (var k = 0; k < 7; k++) d.push({ a:k / 7 * 6.28 + Math.random() * 0.5, s:0.6 + Math.random() * 0.5 });
+  fx.push({ x:b.dx, y:b.y, r:b.r, col:col, age:0, d:d });
+  bubbles[i] = mk(false);
+  count++; renderCnt();
+  sound(b.r); buzz();
+}
+function hit(x, y){
+  for (var i = bubbles.length - 1; i >= 0; i--) {
+    var b = bubbles[i], dx = x - b.dx, dy = y - b.y;
+    if (dx * dx + dy * dy <= b.r * b.r) { pop(i); return; }
+  }
+}
+var down = false;
+cv.addEventListener('pointerdown', function(e){ down = true; $('panel').hidden = true; hit(e.clientX, e.clientY); });
+cv.addEventListener('pointermove', function(e){ if (down) hit(e.clientX, e.clientY); });
+addEventListener('pointerup', function(){ down = false; });
+addEventListener('pointercancel', function(){ down = false; });
+
+var last = performance.now();
+function frame(t){
+  var dt = Math.min(40, t - last) / 16.7; last = t;
+  ctx.clearRect(0, 0, W, H);
+  drawClouds(dt);
+  var cols = PAL[S.theme];
+  for (var i = 0; i < bubbles.length; i++) {
+    var b = bubbles[i];
+    b.y -= b.vy * dt;
+    b.dx = b.x + Math.sin(t / 900 + b.ph) * b.amp;
+    if (b.y < -b.r - 10) { bubbles[i] = b = mk(false); }
+    var col = cols[b.c];
+    var g = ctx.createRadialGradient(b.dx - b.r * 0.3, b.y - b.r * 0.3, b.r * 0.1, b.dx, b.y, b.r);
+    g.addColorStop(0, 'rgba(255,255,255,.85)');
+    g.addColorStop(0.35, rgba(col, 0.55));
+    g.addColorStop(1, rgba(col, 0.9));
+    ctx.beginPath(); ctx.arc(b.dx, b.y, b.r, 0, 6.2832);
+    ctx.fillStyle = g; ctx.fill();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.stroke();
+  }
+  for (var j = fx.length - 1; j >= 0; j--) {
+    var f = fx[j]; f.age += dt;
+    var p = f.age / 18;
+    if (p >= 1) { fx.splice(j, 1); continue; }
+    ctx.globalAlpha = 1 - p;
+    ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (1 + p * 0.5), 0, 6.2832);
+    ctx.lineWidth = 2; ctx.strokeStyle = f.col; ctx.stroke();
+    ctx.fillStyle = f.col;
+    for (var k = 0; k < f.d.length; k++) {
+      var q = f.d[k], dist = f.r * (0.6 + p * 1.1 * q.s);
+      ctx.beginPath();
+      ctx.arc(f.x + Math.cos(q.a) * dist, f.y + Math.sin(q.a) * dist, 3.5 * (1 - p) + 1, 0, 6.2832);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+document.addEventListener('visibilitychange', function(){
+  if (!ac) return;
+  try { if (document.hidden) ac.suspend(); else ac.resume(); } catch(e){}
+});
+load(apply);
+apply();
+})();
+</script>
+</body>
+</html>
